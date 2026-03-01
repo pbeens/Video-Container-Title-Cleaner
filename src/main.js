@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron')
 const path = require('node:path');
 const fsSync = require('node:fs');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
 const { spawn } = require('node:child_process');
 const ffmpegStatic = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
@@ -17,41 +18,6 @@ const ALLOWED_EXTERNAL_URLS = new Set([
 ]);
 const activeRemovalJobs = new Map();
 const canceledRemovalJobs = new Set();
-
-function resolveBinaryPath(rawPath, binaryName) {
-  if (!binaryName) {
-    return null;
-  }
-
-  const candidates = [];
-
-  if (app.isPackaged) {
-    const binaryFile = process.platform === 'win32'
-      ? `${binaryName}.exe`
-      : binaryName;
-    candidates.push(path.join(process.resourcesPath, 'bin', binaryFile));
-  }
-
-  if (rawPath && typeof rawPath === 'string') {
-    candidates.push(rawPath);
-    if (rawPath.includes('app.asar')) {
-      candidates.push(rawPath.replace('app.asar', 'app.asar.unpacked'));
-    }
-  }
-
-  for (const candidate of candidates) {
-    try {
-      const stat = fsSync.statSync(candidate);
-      if (stat.isFile()) {
-        return candidate;
-      }
-    } catch {
-      // Try next candidate.
-    }
-  }
-
-  return rawPath || null;
-}
 
 function createWindow() {
   const appTitle = `Video Container Title Cleaner v${app.getVersion()}`;
@@ -180,8 +146,7 @@ async function collectVideosRecursively(rootPath, output = []) {
 
 function runFfprobe(filePath) {
   return new Promise((resolve) => {
-    const ffprobeRawPath = ffprobeStatic.path ? path.normalize(ffprobeStatic.path) : null;
-    const ffprobePath = resolveBinaryPath(ffprobeRawPath, 'ffprobe');
+    const ffprobePath = ffprobeStatic.path;
     if (!ffprobePath) {
       resolve({
         filePath,
@@ -281,8 +246,7 @@ function removeContainerTitleFromFile(inputPath, outputPath, options = {}) {
       return;
     }
 
-    const ffmpegRawPath = ffmpegStatic ? path.normalize(ffmpegStatic) : null;
-    const ffmpegPath = resolveBinaryPath(ffmpegRawPath, 'ffmpeg');
+    const ffmpegPath = ffmpegStatic;
     if (!ffmpegPath) {
       resolve({
         inputPath,
