@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
 const { spawn } = require('node:child_process');
 const ffmpegStatic = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
@@ -16,6 +17,30 @@ const ALLOWED_EXTERNAL_URLS = new Set([
 ]);
 const activeRemovalJobs = new Map();
 const canceledRemovalJobs = new Set();
+
+function resolveBundledBinaryPath(binaryPath) {
+  if (!binaryPath || typeof binaryPath !== 'string') {
+    return null;
+  }
+
+  const candidates = [binaryPath];
+  if (binaryPath.includes('app.asar')) {
+    candidates.unshift(binaryPath.replace('app.asar', 'app.asar.unpacked'));
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const stat = fsSync.statSync(candidate);
+      if (stat.isFile()) {
+        return candidate;
+      }
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  return binaryPath;
+}
 
 function createWindow() {
   const appTitle = `Video Container Title Cleaner v${app.getVersion()}`;
@@ -144,7 +169,7 @@ async function collectVideosRecursively(rootPath, output = []) {
 
 function runFfprobe(filePath) {
   return new Promise((resolve) => {
-    const ffprobePath = ffprobeStatic.path;
+    const ffprobePath = resolveBundledBinaryPath(ffprobeStatic.path);
     if (!ffprobePath) {
       resolve({
         filePath,
@@ -244,7 +269,7 @@ function removeContainerTitleFromFile(inputPath, outputPath, options = {}) {
       return;
     }
 
-    const ffmpegPath = ffmpegStatic;
+    const ffmpegPath = resolveBundledBinaryPath(ffmpegStatic);
     if (!ffmpegPath) {
       resolve({
         inputPath,
