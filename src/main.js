@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('node:path');
+const fsSync = require('node:fs');
 const fs = require('node:fs/promises');
 const { spawn } = require('node:child_process');
 const ffmpegStatic = require('ffmpeg-static');
@@ -16,6 +17,33 @@ const ALLOWED_EXTERNAL_URLS = new Set([
 ]);
 const activeRemovalJobs = new Map();
 const canceledRemovalJobs = new Set();
+
+function resolveBinaryPath(rawPath, binaryName) {
+  const candidates = [];
+  if (app.isPackaged) {
+    const binaryFile = process.platform === 'win32'
+      ? (binaryName === 'ffprobe' ? 'ffprobe.exe' : 'ffmpeg.exe')
+      : (binaryName === 'ffprobe' ? 'ffprobe' : 'ffmpeg');
+    candidates.push(path.join(process.resourcesPath, 'bin', binaryFile));
+  }
+
+  if (rawPath) {
+    candidates.push(rawPath);
+
+    const asarSegment = `${path.sep}app.asar${path.sep}`;
+    if (rawPath.includes(asarSegment)) {
+      candidates.push(rawPath.replace(asarSegment, `${path.sep}app.asar.unpacked${path.sep}`));
+    }
+  }
+
+  for (const candidate of candidates) {
+    if (candidate && fsSync.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return rawPath || null;
+}
 
 function createWindow() {
   const appTitle = `Video Container Title Cleaner v${app.getVersion()}`;
@@ -144,7 +172,8 @@ async function collectVideosRecursively(rootPath, output = []) {
 
 function runFfprobe(filePath) {
   return new Promise((resolve) => {
-    const ffprobePath = ffprobeStatic.path;
+    const ffprobeRawPath = ffprobeStatic.path ? path.normalize(ffprobeStatic.path) : null;
+    const ffprobePath = resolveBinaryPath(ffprobeRawPath, 'ffprobe');
     if (!ffprobePath) {
       resolve({
         filePath,
@@ -244,7 +273,8 @@ function removeContainerTitleFromFile(inputPath, outputPath, options = {}) {
       return;
     }
 
-    const ffmpegPath = ffmpegStatic;
+    const ffmpegRawPath = ffmpegStatic ? path.normalize(ffmpegStatic) : null;
+    const ffmpegPath = resolveBinaryPath(ffmpegRawPath, 'ffmpeg');
     if (!ffmpegPath) {
       resolve({
         inputPath,
