@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Container Title Cleaner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="panel hero">
+        <h1>Video Container Title Cleaner</h1>
+        <p>
+          Drop video files or folders below. Folders are scanned recursively.
+          This release inspects and removes only the container title property.
+        </p>
+      </header>
+
+      <section class="panel controls">
+        <div class="control-row">
+          <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop videos or folders">
+            <strong>Drop videos or folders here</strong>
+            <span>or click to choose files/folders</span>
+          </div>
+
+          <div class="control-side">
+            <div class="actions">
+              <button id="inspect-button" class="btn primary" type="button">Inspect Titles</button>
+              <button id="clear-button" class="btn" type="button">Clear</button>
+              <button id="remove-button" class="btn danger" type="button">Remove Container Titles</button>
+            </div>
+            <p id="status" class="status">No files selected.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="results-header">
+          <h2>Detected Container Title</h2>
+          <span id="result-count" class="count">0 files</span>
+        </div>
+        <div id="results" class="results" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

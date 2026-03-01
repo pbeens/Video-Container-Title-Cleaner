@@ -1,0 +1,41 @@
+{
+  "name": "video-container-title-cleaner",
+  "version": "0.1.0",
+  "description": "Electron desktop app for inspecting and eventually removing video metadata properties.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "node --check src/main.js && node --check src/preload.js && node --check src/renderer/renderer.js",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
+  },
+  "keywords": [
+    "electron",
+    "video",
+    "metadata",
+    "ffprobe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.peter.videocontainertitlecleaner",
+    "productName": "Video Container Title Cleaner",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!**/*.map"
+    ]
+  }
+}

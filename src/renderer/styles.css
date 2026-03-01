@@ -1,0 +1,258 @@
+:root {
+  --bg: #f2f4f7;
+  --panel: #ffffff;
+  --text: #14213d;
+  --muted: #4f5d75;
+  --line: #dce3ed;
+  --accent: #0b6e4f;
+  --accent-strong: #085c42;
+  --danger: #be123c;
+  --danger-strong: #9f1239;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top right, #dbeafe 0, #f2f4f7 40%, #eef2f6 100%);
+}
+
+.layout {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  min-height: 100vh;
+  grid-template-rows: auto auto 1fr;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 8px 24px rgba(20, 33, 61, 0.06);
+}
+
+.hero h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.controls {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.control-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 380px) 1fr;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.control-side {
+  display: grid;
+  gap: 0.65rem;
+  align-content: center;
+}
+
+.drop-zone {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 0.3rem;
+  border: 2px dashed #89a2be;
+  background: linear-gradient(135deg, #f0f9ff, #f8fafc);
+  color: var(--muted);
+  border-radius: 10px;
+  min-height: 92px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.drop-zone strong {
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.drop-zone span {
+  font-size: 0.88rem;
+}
+
+.drop-zone.active {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, #dcfce7, #f0fdf4);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #f9fbff;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: var(--accent-strong);
+}
+
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn.danger:hover {
+  background: var(--danger-strong);
+}
+
+.btn:disabled {
+  background: #e6ebf2;
+  border-color: #d2dbe8;
+  color: #7a889f;
+  cursor: not-allowed;
+}
+
+.status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.status.processing {
+  animation: status-pulse 1s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+.drop-zone.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.results-panel {
+  min-height: 280px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.6rem;
+}
+
+.results-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.count {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.results {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: auto;
+  max-height: 48vh;
+  background: #fcfdff;
+}
+
+.file-card {
+  border-bottom: 1px solid var(--line);
+  padding: 0.8rem;
+}
+
+.file-card:last-child {
+  border-bottom: none;
+}
+
+.file-title {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  word-break: break-all;
+}
+
+.meta-list {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--text);
+}
+
+.meta-list li {
+  margin: 0.2rem 0;
+  word-break: break-word;
+}
+
+.empty {
+  padding: 1rem;
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger-strong);
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .control-row {
+    grid-template-columns: 1fr;
+  }
+
+  .control-side {
+    align-content: start;
+  }
+
+  .results {
+    max-height: 50vh;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
