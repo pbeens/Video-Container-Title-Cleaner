@@ -1,6 +1,6 @@
 # Video Container Title Cleaner
 
-![Video Container Title Cleaner Screenshot](Images/Video%20Cleaner%20Title%20Container%20v0.2.0.jpg)
+![Video Container Title Cleaner Screenshot](images/Video%20Cleaner%20Title%20Container%20v0.2.0.jpg)
 
 Electron desktop app for loading videos (or whole folders), scanning recursively, and inspecting/removing the container `title` property.
 
