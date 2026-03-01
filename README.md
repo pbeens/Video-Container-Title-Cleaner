@@ -24,6 +24,7 @@ Download the latest macOS and Windows builds from the [Releases page](https://gi
 ## Tech Stack
 - Electron
 - Vanilla HTML/CSS/JS renderer
+- `ffmpeg-static` for bundled ffmpeg binary access
 - `ffprobe-static` for bundled ffprobe binary access
 
 ## Project Structure
@@ -77,6 +78,26 @@ npm run build:mac
 ### Notes on Cross-Platform Builds
 - Build on the target OS when possible (Windows on Windows, macOS on macOS).
 - Electron packaging/signing requirements may vary by platform and certificate setup.
+
+## Troubleshooting
+### `sh: electron-builder: command not found`
+Cause: dependencies were not installed (or devDependencies were skipped), so `node_modules/.bin/electron-builder` is missing.
+
+Fix:
+```bash
+npm ci
+npm run build:mac
+```
+
+### `Inspection failed: ... video:inspect ... spawn ENOTDIR` (macOS app installed from DMG)
+Cause: packaged app could resolve ffprobe/ffmpeg to a path inside `app.asar`, which is not directly executable.
+
+Fix:
+- Use a build that unpacks ffprobe/ffmpeg into `app.asar.unpacked`.
+- This project now includes:
+  - runtime path resolution that prefers `app.asar.unpacked` for ffprobe/ffmpeg
+  - `electron-builder` `asarUnpack` entries for `ffmpeg-static` and `ffprobe-static`
+- Rebuild and reinstall from the latest DMG/ZIP artifacts in `release/`.
 
 ## Notes
 - Supported video extensions are defined in `src/main.js` (`VIDEO_EXTENSIONS`).
