@@ -1,7 +1,7 @@
 {
   "name": "video-container-title-cleaner",
-  "version": "0.1.0",
-  "description": "Electron desktop app for inspecting and eventually removing video metadata properties.",
+  "version": "0.2.0",
+  "description": "Electron desktop app for scanning videos and removing container title metadata.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -30,7 +30,14 @@
     "appId": "com.peter.videocontainertitlecleaner",
     "productName": "Video Container Title Cleaner",
     "directories": {
+      "buildResources": "build",
       "output": "release"
+    },
+    "mac": {
+      "icon": "build/icons/app.icns"
+    },
+    "win": {
+      "icon": "build/icons/app.ico"
     },
     "files": [
       "src/**/*",

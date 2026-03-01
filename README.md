@@ -1,12 +1,25 @@
 # Video Container Title Cleaner
 
+![Video Container Title Cleaner Screenshot](Images/Video%20Cleaner%20Title%20Container%20v0.2.0.jpg)
+
 Electron desktop app for loading videos (or whole folders), scanning recursively, and inspecting/removing the container `title` property.
 
-## Current Scope (v0.1)
+## Support
+- Report bugs or request features: https://github.com/pbeens/Video-Container-Title-Cleaner/issues
+- Support development: https://www.buymeacoffee.com/pbeens
+
+Download the latest macOS and Windows builds from the [Releases page](https://github.com/pbeens/Video-Container-Title-Cleaner/releases).
+
+## Current Scope (v0.2)
 - Drag and drop files or folders into the UI.
 - Recursively discover supported video files in dropped folders.
+- Automatically inspect after dropping files/folders.
 - Inspect and display container title per file using `ffprobe`.
+- Show scan summary counts (titles found vs none).
 - Remove container title in-place on the original file.
+- Show per-file removal progress, auto-scroll to active file, and immediate per-file status updates.
+- Stop active removal safely, including temporary file cleanup.
+- Optional list filter to hide videos with no detected container title.
 
 ## Tech Stack
 - Electron
@@ -48,19 +61,6 @@ npm start
 npm start
 ```
 
-## Validation Runs (No GUI)
-Use this command for JavaScript syntax validation only.
-
-### Windows (PowerShell or CMD)
-```bash
-npm run test
-```
-
-### macOS (Terminal / zsh)
-```bash
-npm run test
-```
-
 ## Build Instructions
 Build outputs are written to the `release/` directory.
 
@@ -84,8 +84,3 @@ npm run build:mac
 - The app uses a temporary working file internally and then replaces the original.
 - Files with no container title are automatically skipped during removal.
 - The app is configured with `contextIsolation: true`, `sandbox: true`, and no renderer `nodeIntegration`.
-
-## Next Iteration Ideas
-1. Add optional in-app operation log panel for removal output paths and errors.
-2. Add backup/location preferences and overwrite safeguards in settings.
-3. Add selection filters and search for larger batches.

@@ -9,10 +9,15 @@
   <body>
     <main class="layout">
       <header class="panel hero">
-        <h1>Video Container Title Cleaner</h1>
+        <div class="hero-top">
+          <h1>Video Container Title Cleaner</h1>
+          <div class="hero-links">
+            <button id="support-button" class="btn" type="button">Support</button>
+            <button id="coffee-button" class="btn accent" type="button">Buy Me a Coffee</button>
+          </div>
+        </div>
         <p>
-          Drop video files or folders below. Folders are scanned recursively.
-          This release inspects and removes only the container title property.
+          Drop video files or folders to scan recursively, inspect container title metadata, and remove container titles in bulk.
         </p>
       </header>
 
@@ -28,7 +33,12 @@
               <button id="inspect-button" class="btn primary" type="button">Inspect Titles</button>
               <button id="clear-button" class="btn" type="button">Clear</button>
               <button id="remove-button" class="btn danger" type="button">Remove Container Titles</button>
+              <button id="stop-button" class="btn warning" type="button" hidden>Stop Processing</button>
             </div>
+            <label class="option-check" for="include-no-title-checkbox">
+              <input id="include-no-title-checkbox" type="checkbox" />
+              <span>Hide videos with no detected container title</span>
+            </label>
             <p id="status" class="status">No files selected.</p>
           </div>
         </div>

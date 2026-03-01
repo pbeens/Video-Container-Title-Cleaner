@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { spawn } = require('node:child_process');
@@ -10,8 +10,19 @@ const VIDEO_EXTENSIONS = new Set([
   '.mpg', '.mpeg', '.3gp', '.mts', '.m2ts', '.ts', '.ogv'
 ]);
 
+const ALLOWED_EXTERNAL_URLS = new Set([
+  'https://github.com/pbeens/Video-Container-Title-Cleaner/issues',
+  'https://www.buymeacoffee.com/pbeens'
+]);
+const activeRemovalJobs = new Map();
+const canceledRemovalJobs = new Set();
+
 function createWindow() {
+  const appTitle = `Video Container Title Cleaner v${app.getVersion()}`;
+  const windowIcon = path.join(__dirname, '..', 'build', 'icons', 'app.ico');
   const win = new BrowserWindow({
+    title: appTitle,
+    icon: windowIcon,
     width: 1200,
     height: 850,
     minWidth: 980,
@@ -25,7 +36,74 @@ function createWindow() {
     }
   });
 
+  win.setMenuBarVisibility(false);
+  win.on('page-title-updated', (event) => event.preventDefault());
+  win.webContents.on('did-finish-load', () => {
+    win.setTitle(appTitle);
+  });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+}
+
+function addActiveRemovalProcess(jobId, processEntry) {
+  if (!jobId) {
+    return;
+  }
+
+  const entries = activeRemovalJobs.get(jobId) || new Set();
+  entries.add(processEntry);
+  activeRemovalJobs.set(jobId, entries);
+}
+
+function removeActiveRemovalProcess(jobId, processEntry) {
+  if (!jobId) {
+    return;
+  }
+
+  const entries = activeRemovalJobs.get(jobId);
+  if (!entries) {
+    return;
+  }
+
+  entries.delete(processEntry);
+  if (entries.size === 0) {
+    activeRemovalJobs.delete(jobId);
+  }
+}
+
+function isRemovalJobCanceled(jobId) {
+  return Boolean(jobId) && canceledRemovalJobs.has(jobId);
+}
+
+async function cancelRemovalJob(jobId) {
+  if (!jobId) {
+    return { canceled: false, cleanedTempFiles: 0 };
+  }
+
+  canceledRemovalJobs.add(jobId);
+  const entries = activeRemovalJobs.get(jobId);
+  if (!entries || entries.size === 0) {
+    return { canceled: true, cleanedTempFiles: 0 };
+  }
+
+  const cleanupTasks = [];
+  let cleanedTempFiles = 0;
+
+  for (const entry of Array.from(entries)) {
+    entry.canceled = true;
+    try {
+      entry.proc.kill();
+    } catch {
+      // no-op
+    }
+
+    if (entry.tempOutputPath) {
+      cleanedTempFiles += 1;
+      cleanupTasks.push(fs.rm(entry.tempOutputPath, { force: true }).catch(() => {}));
+    }
+  }
+
+  await Promise.all(cleanupTasks);
+  return { canceled: true, cleanedTempFiles };
 }
 
 async function safeStat(inputPath) {
@@ -151,8 +229,21 @@ async function nextAvailableOutputPath(inputPath) {
   throw new Error('Failed to find an available output file name.');
 }
 
-function removeContainerTitleFromFile(inputPath, outputPath) {
+function removeContainerTitleFromFile(inputPath, outputPath, options = {}) {
+  const jobId = typeof options.jobId === 'string' ? options.jobId : null;
+
   return new Promise((resolve) => {
+    if (isRemovalJobCanceled(jobId)) {
+      resolve({
+        inputPath,
+        outputPath: null,
+        success: false,
+        canceled: true,
+        error: 'Operation canceled by user.'
+      });
+      return;
+    }
+
     const ffmpegPath = ffmpegStatic;
     if (!ffmpegPath) {
       resolve({
@@ -178,6 +269,8 @@ function removeContainerTitleFromFile(inputPath, outputPath) {
       windowsHide: true,
       stdio: ['ignore', 'ignore', 'pipe']
     });
+    const processEntry = { proc, tempOutputPath: outputPath, canceled: false };
+    addActiveRemovalProcess(jobId, processEntry);
 
     let stderr = '';
     proc.stderr.on('data', (chunk) => {
@@ -185,40 +278,68 @@ function removeContainerTitleFromFile(inputPath, outputPath) {
     });
 
     proc.on('error', (error) => {
+      removeActiveRemovalProcess(jobId, processEntry);
       resolve({
         inputPath,
         outputPath,
         success: false,
+        canceled: processEntry.canceled || isRemovalJobCanceled(jobId),
         error: error.message
       });
     });
 
     proc.on('close', (code) => {
+      removeActiveRemovalProcess(jobId, processEntry);
+      const canceled = processEntry.canceled || isRemovalJobCanceled(jobId);
       resolve({
         inputPath,
-        outputPath,
-        success: code === 0,
-        error: code === 0 ? null : (stderr.trim() || `ffmpeg exited with code ${code}`)
+        outputPath: canceled ? null : outputPath,
+        success: !canceled && code === 0,
+        canceled,
+        error: canceled ? 'Operation canceled by user.' : (code === 0 ? null : (stderr.trim() || `ffmpeg exited with code ${code}`))
       });
     });
   });
 }
 
-async function removeContainerTitleInPlace(inputPath) {
+async function removeContainerTitleInPlace(inputPath, options = {}) {
+  const jobId = typeof options.jobId === 'string' ? options.jobId : null;
+  if (isRemovalJobCanceled(jobId)) {
+    return {
+      inputPath,
+      outputPath: null,
+      success: false,
+      canceled: true,
+      error: 'Operation canceled by user.'
+    };
+  }
+
   const dir = path.dirname(inputPath);
   const ext = path.extname(inputPath);
   const base = path.basename(inputPath, ext);
   const tempOutputPath = await nextAvailableOutputPath(path.join(dir, `${base}.__temp__${ext}`));
   const backupPath = `${inputPath}.rvpgui_backup`;
 
-  const removal = await removeContainerTitleFromFile(inputPath, tempOutputPath);
+  const removal = await removeContainerTitleFromFile(inputPath, tempOutputPath, { jobId });
   if (!removal.success) {
     await fs.rm(tempOutputPath, { force: true }).catch(() => {});
     return {
       inputPath,
       outputPath: null,
       success: false,
+      canceled: Boolean(removal.canceled),
       error: removal.error
+    };
+  }
+
+  if (isRemovalJobCanceled(jobId)) {
+    await fs.rm(tempOutputPath, { force: true }).catch(() => {});
+    return {
+      inputPath,
+      outputPath: null,
+      success: false,
+      canceled: true,
+      error: 'Operation canceled by user.'
     };
   }
 
@@ -236,6 +357,7 @@ async function removeContainerTitleInPlace(inputPath) {
       inputPath,
       outputPath: inputPath,
       success: true,
+      canceled: false,
       error: null
     };
   } catch (error) {
@@ -251,6 +373,7 @@ async function removeContainerTitleInPlace(inputPath) {
       inputPath,
       outputPath: null,
       success: false,
+      canceled: false,
       error: `Failed to replace original file: ${error.message}`
     };
   }
@@ -343,15 +466,27 @@ ipcMain.handle('video:inspect', async (_event, payload) => {
 
 ipcMain.handle('video:remove-properties', async (_event, payload) => {
   const files = Array.isArray(payload?.files) ? payload.files : [];
+  const jobId = typeof payload?.jobId === 'string' ? payload.jobId : null;
   const dedupedFiles = uniquePaths(files);
 
   const results = await mapWithConcurrency(dedupedFiles, async (inputPath) => {
+    if (isRemovalJobCanceled(jobId)) {
+      return {
+        inputPath,
+        outputPath: null,
+        success: false,
+        canceled: true,
+        error: 'Operation canceled by user.'
+      };
+    }
+
     const stats = await safeStat(inputPath);
     if (!stats || !stats.isFile()) {
       return {
         inputPath,
         outputPath: null,
         success: false,
+        canceled: false,
         error: 'Input file was not found.'
       };
     }
@@ -362,12 +497,13 @@ ipcMain.handle('video:remove-properties', async (_event, payload) => {
         inputPath,
         outputPath: null,
         success: true,
+        canceled: false,
         skipped: true,
         error: null
       };
     }
 
-    const removal = await removeContainerTitleInPlace(inputPath);
+    const removal = await removeContainerTitleInPlace(inputPath, { jobId });
     return { ...removal, skipped: false };
   }, 2);
 
@@ -383,7 +519,21 @@ ipcMain.handle('video:remove-properties', async (_event, payload) => {
   };
 });
 
+ipcMain.handle('video:cancel-removal', async (_event, payload) => {
+  const jobId = typeof payload?.jobId === 'string' ? payload.jobId : null;
+  if (!jobId) {
+    return { ok: false, error: 'Missing removal job id.' };
+  }
+
+  const result = await cancelRemovalJob(jobId);
+  return {
+    ok: result.canceled,
+    cleanedTempFiles: result.cleanedTempFiles
+  };
+});
+
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   createWindow();
 
   app.on('activate', () => {
@@ -391,6 +541,20 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+ipcMain.handle('app:open-external', async (_event, payload = {}) => {
+  const rawUrl = typeof payload.url === 'string' ? payload.url : '';
+  if (!ALLOWED_EXTERNAL_URLS.has(rawUrl)) {
+    return { ok: false, error: 'Blocked external URL.' };
+  }
+
+  try {
+    await shell.openExternal(rawUrl);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
 });
 
 app.on('window-all-closed', () => {
