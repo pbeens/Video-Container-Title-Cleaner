@@ -19,26 +19,34 @@ const activeRemovalJobs = new Map();
 const canceledRemovalJobs = new Set();
 
 function resolveBinaryPath(rawPath, binaryName) {
+  if (!binaryName) {
+    return null;
+  }
+
   const candidates = [];
+
   if (app.isPackaged) {
     const binaryFile = process.platform === 'win32'
-      ? (binaryName === 'ffprobe' ? 'ffprobe.exe' : 'ffmpeg.exe')
-      : (binaryName === 'ffprobe' ? 'ffprobe' : 'ffmpeg');
+      ? `${binaryName}.exe`
+      : binaryName;
     candidates.push(path.join(process.resourcesPath, 'bin', binaryFile));
   }
 
-  if (rawPath) {
+  if (rawPath && typeof rawPath === 'string') {
     candidates.push(rawPath);
-
-    const asarSegment = `${path.sep}app.asar${path.sep}`;
-    if (rawPath.includes(asarSegment)) {
-      candidates.push(rawPath.replace(asarSegment, `${path.sep}app.asar.unpacked${path.sep}`));
+    if (rawPath.includes('app.asar')) {
+      candidates.push(rawPath.replace('app.asar', 'app.asar.unpacked'));
     }
   }
 
   for (const candidate of candidates) {
-    if (candidate && fsSync.existsSync(candidate)) {
-      return candidate;
+    try {
+      const stat = fsSync.statSync(candidate);
+      if (stat.isFile()) {
+        return candidate;
+      }
+    } catch {
+      // Try next candidate.
     }
   }
 

@@ -18,6 +18,9 @@ Current build status:
 - Avoid direct shelling from the renderer process.
 - Preserve recursive folder traversal behavior.
 - Keep the results view responsive for larger file lists (do not block UI thread with heavy synchronous work).
+- For packaged builds, ensure ffmpeg/ffprobe binaries are executable outside `app.asar`:
+  - Keep electron-builder `asarUnpack` entries for `ffmpeg-static` and `ffprobe-static`.
+  - Resolve spawned binary paths to `app.asar.unpacked` when needed to avoid `spawn ENOTDIR`.
 - When implementing removal:
   - Default to non-destructive behavior (new file or backup mode).
   - Provide clear per-file status and errors.

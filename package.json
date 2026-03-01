@@ -29,6 +29,10 @@
   "build": {
     "appId": "com.peter.videocontainertitlecleaner",
     "productName": "Video Container Title Cleaner",
+    "asarUnpack": [
+      "**/node_modules/ffmpeg-static/**",
+      "**/node_modules/ffprobe-static/**"
+    ],
     "directories": {
       "buildResources": "build",
       "output": "release"
@@ -53,10 +57,6 @@
       "src/**/*",
       "package.json",
       "!**/*.map"
-    ],
-    "asarUnpack": [
-      "**/node_modules/ffprobe-static/**",
-      "**/node_modules/ffmpeg-static/**"
     ]
   }
 }
