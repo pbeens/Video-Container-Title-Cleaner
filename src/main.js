@@ -2,7 +2,6 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron')
 const path = require('node:path');
 const fsSync = require('node:fs');
 const fs = require('node:fs/promises');
-const fsSync = require('node:fs');
 const { spawn } = require('node:child_process');
 const ffmpegStatic = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
